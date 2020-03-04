@@ -1,0 +1,157 @@
+
+********** Kafka ************
+
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0>dir
+
+************zookeeper start************
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0>bin\windows\zookeeper-server-start.bat config\zookeeper.properties
+
+************start kafka************
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0>bin\windows\kafka-server-start.bat config\server.properties
+
+
+*******create topic************
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-topics.bat --create --topic first-topic --zookeeper localhost:2181 --partitions 5 --replication-factor 1
+
+kafka-topics.bat --create --topic emp-topic --zookeeper localhost:2181 --partitions 5 --replication-factor 1
+Created topic first-topic.
+
+
+********* details
+
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-topics.bat --describe --topic first-topic --zookeeper localhost:2181
+Topic:first-topic       PartitionCount:5        ReplicationFactor:1     Configs:
+        Topic: first-topic      Partition: 0    Leader: 0       Replicas: 0     Isr: 0
+        Topic: first-topic      Partition: 1    Leader: 0       Replicas: 0     Isr: 0
+        Topic: first-topic      Partition: 2    Leader: 0       Replicas: 0     Isr: 0
+        Topic: first-topic      Partition: 3    Leader: 0       Replicas: 0     Isr: 0
+        Topic: first-topic      Partition: 4    Leader: 0       Replicas: 0     Isr: 0
+
+
+
+produce msg:
+
+:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-console-producer.bat --topic first-topic --broker-list localhost:9092
+
+
+consume msg :
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-console-consumer.bat --topic first-topic --bootstrap-server localhost:9092
+
+
+default kafka port is 9092, to change edit in server.properties
+listeners=PLAINTEXT://:9093
+
+multiple servers publish :
+
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-console-producer.bat --topic first-topic --broker-list 192.168.6.209:9092,localhost:9093
+
+
+Adding consumer group:
+
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-console-consumer.bat --topic first-topic --bootstrap-server localhost:9093 --consumer-property group.id=group-1
+
+Print key
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-console-consumer.bat --topic first-topic --bootstrap-server localhost:9093 --property print.key=true
+
+
+Available topics:
+
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-topics.bat --list --zookeeper localhost:2181
+
+
+
+
+
+
+
+
+
+
+
+
+
+Create Table:
+
+mysql> create database daimlertrainingdb;
+Query OK, 1 row affected (0.04 sec)
+
+mysql> create table employee_tbl(emp_id integer auto_increment,emp_name varchar(20),designation varchar(20),primary key(emp_id));
+ERROR 1046 (3D000): No database selected
+mysql> use daimlertrainingdb;
+Database changed
+mysql> create table employee_tbl(emp_id integer auto_increment,emp_name varchar(20),designation varchar(20),primary key(emp_id));
+Query OK, 0 rows affected (0.09 sec)
+
+mysql> insert into employee_tbl(emp_name,designation) values ("Reshmi Nair","Principal Consultant");
+Query OK, 1 row affected (0.04 sec)
+
+mysql> select * from employee_tbl;
++--------+-------------+----------------------+
+| emp_id | emp_name    | designation          |
++--------+-------------+----------------------+
+|      1 | Reshmi Nair | Principal Consultant |
++--------+-------------+----------------------+
+1 row in set (0.00 sec)
+
+mysql>
+
+
+
+
+Kafka cluster creation:
+
+
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-topics.bat --create --topic test-cluster-topic --zookeeper localhost:2181 --partitions 4 --replication-factor 2
+Created topic test-cluster-topic.
+
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-topics.bat --describe --topic test-cluster-topic --zookeeper localhost:2181
+Topic:test-cluster-topic        PartitionCount:4        ReplicationFactor:2     Configs:
+        Topic: test-cluster-topic       Partition: 0    Leader: 1       Replicas: 1,2   Isr: 1,2
+        Topic: test-cluster-topic       Partition: 1    Leader: 2       Replicas: 2,3   Isr: 2,3
+        Topic: test-cluster-topic       Partition: 2    Leader: 3       Replicas: 3,1   Isr: 3,1
+        Topic: test-cluster-topic       Partition: 3    Leader: 1       Replicas: 1,3   Isr: 1,3
+
+After stopping broker 2
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0\bin\windows>kafka-topics.bat --describe --topic test-cluster-topic --zookeeper localhost:2181
+Topic:test-cluster-topic        PartitionCount:4        ReplicationFactor:2     Configs:
+        Topic: test-cluster-topic       Partition: 0    Leader: 1       Replicas: 1,2   Isr: 1
+        Topic: test-cluster-topic       Partition: 1    Leader: 3       Replicas: 2,3   Isr: 3
+        Topic: test-cluster-topic       Partition: 2    Leader: 3       Replicas: 3,1   Isr: 3,1
+        Topic: test-cluster-topic       Partition: 3    Leader: 1       Replicas: 1,3   Isr: 1,3
+
+
+Security :
+
+Place jaas file under config folder:
+
+
+KafkaServer {
+   org.apache.kafka.common.security.plain.PlainLoginModule required
+   username="admin"
+   password="admin-secret"
+   user_admin="admin-secret"
+   user_alice="alice-secret";
+};
+
+SET JAAS file env variable
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0>set KAFKA_OPTS=-Djava.security.auth.login.config=config/jaas-config.properties
+
+
+C:\Kafka\kafka_2.12-2.3.0\kafka_2.12-2.3.0>bin\windows\kafka-server-start.bat config\server-secure.properties
+
+Add below 4 points in server.properties to make it secure:
+
+listeners=SASL_PLAINTEXT://localhost:9092
+security.inter.broker.protocol=SASL_PLAINTEXT
+sasl.mechanism.inter.broker.protocol=PLAIN
+sasl.enabled.mechanisms=PLAIN
+
+
+
+For SSL:
+listeners=PLAINTEXT://localhost:9092,SSL://localhost:9093
+ssl.keystore.location=C:/tutorials/kafkassl/kafka_2.11-2.3.0_1/server.keystore.jks
+ssl.keystore.password=mytest
+ssl.key.password=mytest
+ssl.truststore.location=C:/tutorials/kafkassl/kafka_2.11-2.3.0_1/server.truststore.jks
+ssl.truststore.password=mytest

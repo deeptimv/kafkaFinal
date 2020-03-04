@@ -1,0 +1,320 @@
+Confluent
+
+[kafka@localhost ~]$ cd ~/Desktop/Kafka/confluent-5.1.0
+[kafka@localhost confluent-5.1.0]$ ls
+bin  etc  lib  README  share  src
+[kafka@localhost confluent-5.1.0]$ sudo bin/confluent start
+[sudo] password for kafka: 
+This CLI is intended for development only, not for production
+https://docs.confluent.io/current/cli/index.html
+
+Using CONFLUENT_CURRENT: /tmp/confluent.4BptN8oC
+Starting zookeeper
+zookeeper is [UP]
+Starting kafka
+kafka is [UP]
+Starting schema-registry
+schema-registry is [UP]
+Starting kafka-rest
+kafka-rest is [UP]
+Starting connect
+connect is [UP]
+Starting ksql-server
+ksql-server is [UP]
+Starting control-center
+control-center is [UP]
+[kafka@localhost confluent-5.1.0]$ sudo bin
+sudo: bin: command not found
+[kafka@localhost confluent-5.1.0]$ sudo bin/confluent stop
+This CLI is intended for development only, not for production
+https://docs.confluent.io/current/cli/index.html
+
+Using CONFLUENT_CURRENT: /tmp/confluent.4BptN8oC
+Stopping control-center
+control-center is [DOWN]
+Stopping ksql-server
+ksql-server is [DOWN]
+Stopping connect
+connect is [DOWN]
+Stopping kafka-rest
+kafka-rest is [DOWN]
+Stopping schema-registry
+schema-registry is [DOWN]
+Stopping kafka
+kafka is [DOWN]
+Stopping zookeeper
+zookeeper is [DOWN]
+[kafka@localhost confluent-5.1.0]$ sudo bin/confluent start schema-registry
+This CLI is intended for development only, not for production
+https://docs.confluent.io/current/cli/index.html
+
+Using CONFLUENT_CURRENT: /tmp/confluent.4BptN8oC
+Starting zookeeper
+zookeeper is [UP]
+Starting kafka
+kafka is [UP]
+Starting schema-registry
+schema-registry is [UP]
+[kafka@localhost confluent-5.1.0]$ cd etc/kafka-connect-jdbc/
+[kafka@localhost kafka-connect-jdbc]$ ls
+sink-quickstart-sqlite.properties  source-quickstart-sqlite.properties
+[kafka@localhost kafka-connect-jdbc]$ gedit source-mysql.properties
+
+
+
+Add file:from connctor documentation:
+
+Like below
+
+name=mysql-whitelist-timestamp-source
+connector.class=io.confluent.connect.jdbc.JdbcSourceConnector
+tasks.max=10
+
+connection.url=jdbc:mysql://192.168.56.1:3307/daimlertrainingdb?user=root&password=root
+table.whitelist=employee_tbl
+
+mode=incrementing
+incrementing.column.name=emp_id
+topic.prefix=topic-mysql-
+
+Open new terminal:
+
+[kafka@localhost ~]$ cd ~
+[kafka@localhost ~]$ cd ~/Desktop/Kafka/confluent-5.1.0/
+[kafka@localhost confluent-5.1.0]$ sudo bin/connect-standalone etc/schema-registry//connect-avro-standalone.properties etc/kafka-connect-jdbc/source-mysql.properties 
+[sudo] password for kafka: 
+
+Start Zookeeper
+[kafka@localhost confluent-5.1.0]$ bin/kafka-topics --list --zookeeper localhost:2181
+
+[kafka@localhost confluent-5.1.0]$ sudo bin/kafka-avro-console-consumer --topic topic-mysql-employee_tbl --bootstarp-server localhost:9092 --from-beginning
+[sudo] password for kafka: 
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+{"emp_id":1,"emp_name":{"string":"ABC"},"designation":{"string":"Principal Consultant"}}
+{"emp_id":2,"emp_name":{"string":"DEF"},"designation":{"string":"Assistant Consultant"}}
+{"emp_id":3,"emp_name":{"string":"PPP"},"designation":{"string":"Tester"}}
+
+
+
+
+
+
+
+
+***********************************
+
+Set up Cassandra:
+
+[kafka@localhost ~]$ cd ~/D
+Desktop/   Documents/ Downloads/ 
+[kafka@localhost ~]$ cd ~/Downloads/apache-cassandra-3.11.5/bin/
+[kafka@localhost bin]$ sudo ./cassandra
+
+
+Another terminal:
+
+[kafka@localhost ~]$ cd ~/D
+Desktop/   Documents/ Downloads/ 
+[kafka@localhost ~]$ cd ~/Downloads/apache-cassandra-3.11.5/bin/
+[kafka@localhost bin]$ ./cqlsh
+Connected to Test Cluster at 127.0.0.1:9042.
+[cqlsh 5.0.1 | Cassandra 3.11.5 | CQL spec 3.4.4 | Native protocol v4]
+cqlsh> create keyspace training_key_space with replication={'class':'SimpleStrategy','replication_factor':1};
+cqlsh> use training_key_space;
+cqlsh:training_key_space> create table employee(id integer,name text,designation text);
+InvalidRequest: Error from server: code=2200 [Invalid query] message="Unknown type training_key_space.integer"
+cqlsh:training_key_space> create table employee(id int primary key,name text,designation text);
+
+
+
+gedit new file:
+
+sink-cassandra.properties
+
+name=cassandra-sink-employees
+connector.class=com.datamountaineer.streamreactor.connect.cassandra.sink.CassandraSinkConnector
+tasks.max=1
+topics=topic-mysql-employee_tbl
+connect.cassandra.kcql=INSERT INTO employee select emp_id as id,emp_name as name,designation from topic-mysql-employee_tbl
+connect.cassandra.contact.points=localhost
+connect.cassandra.port=9042
+connect.cassandra.key.space=training_key_space
+connect.cassandra.username=cassandra
+connect.cassandra.password=cassandra
+
+
+Start kafka with both source and sink
+
+
+[kafka@localhost confluent-5.1.0]$ sudo bin/connect-standalone etc/schema-registry/connect-avro-standalone.properties etc/kafka-connect-jdbc/source-mysql.properties etc/kafka-connect-jdbc/sink-cassandra.properties 
+
+
+
+KSQL:
+
+kafka@localhost kafka-connect-jdbc]$ cd ~/Desktop/Kafka/confluent-5.1.0/
+[kafka@localhost confluent-5.1.0]$ sudo bin/confluent start ksql-server
+
+[sudo] password for kafka: 
+This CLI is intended for development only, not for production
+https://docs.confluent.io/current/cli/index.html
+
+Using CONFLUENT_CURRENT: /tmp/confluent.4BptN8oC
+zookeeper is already running. Try restarting if needed
+kafka is already running. Try restarting if needed
+schema-registry is already running. Try restarting if needed
+Starting ksql-server
+ksql-server is [UP]
+[kafka@localhost confluent-5.1.0]$ bin/ksql
+
+
+
+Create Topic :
+
+[kafka@localhost confluent-5.1.0]$ sudo bin/kafka-topics --create --topic test-topic --zookeeper localhost:2181 --partitions 3 --replication-factor 1
+[sudo] password for kafka:
+
+ksql> create stream test_stream(name varchar, country varchar) with (kafka_topic='test-topic', value_format='delimited');
+
+ Message        
+----------------
+ Stream created 
+----------------
+
+ksql> list streams;
+
+ Stream Name | Kafka Topic | Format    
+---------------------------------------
+ TEST_STREAM | test-topic  | DELIMITED 
+---------------------------------------
+
+ksql> set 'auto.offset.reset'='earliest';
+Successfully changed local property 'auto.offset.reset' to 'earliest'. Use the UNSET command to revert your change.
+ksql> describe test_stream;
+
+Name                 : TEST_STREAM
+ Field   | Type                      
+-------------------------------------
+ ROWTIME | BIGINT           (system) 
+ ROWKEY  | VARCHAR(STRING)  (system) 
+ NAME    | VARCHAR(STRING)           
+ COUNTRY | VARCHAR(STRING)           
+-------------------------------------
+For runtime statistics and query details run: DESCRIBE EXTENDED <Stream,Table>;
+ksql> select name,country from test_stream
+line 1:37: missing ';' at '<EOF>'
+ksql> select name,country from test_stream;
+Def | Sg
+Abc |  India
+jhdfh | USA
+wewqer | China
+
+ksql> select country, count(*) from test_stream group by country;
+China | 1
+ India | 1
+USA | 1
+Sg | 1
+
+
+ksql> create stream json_stream(name varchar, country varchar) with (kafka_topic='second-topic', value_format='json');
+
+ Message        
+----------------
+ Stream created 
+----------------
+ksql> 
+
+ksql> create stream json_stream(name varchar, country varchar) with (kafka_topic='second-topic', value_format='json');
+
+ Message        
+----------------
+ Stream created 
+----------------
+ksql> 
+^C
+ksql> list streams;
+
+ Stream Name | Kafka Topic  | Format    
+----------------------------------------
+ JSON_STREAM | second-topic | JSON      
+ TEST_STREAM | test-topic   | DELIMITED 
+----------------------------------------
+ksql> select country, count(*) from json_stream group by country;
+india | 1
+sg | 1
+
+
+
+
+Create topic and Add msgs to test-topic
+[kafka@localhost confluent-5.1.0]$ sudo bin/kafka-topics --create --topic test-topic --zookeeper localhost:2181 --partitions 3 --replication-factor 1
+[sudo] password for kafka: 
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+Created topic "test-topic".
+[kafka@localhost confluent-5.1.0]$ bin/kafka-console-producer --topic test-topic --broker-list localhost:9092
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+>Abc, India
+>Def,Sg
+>wewqer,China
+>jhdfh,USA
+>
+
+
+[kafka@localhost confluent-5.1.0]$ 
+[kafka@localhost confluent-5.1.0]$ sudo bin/kafka-topics --create --topic second-topic --zookeeper localhost:2181 --partitions 3 --replication-factor 1
+[sudo] password for kafka: 
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+Created topic "second-topic".
+[kafka@localhost confluent-5.1.0]$ list topics;
+
+
+[kafka@localhost confluent-5.1.0]$ sudo bin/kafka-console-producer --topic second-topic --broker-list localhost:9092
+[sudo] password for kafka: 
+OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N
+>{"name":"ggg","country":"india"}
+>{"name":"ppp","country":"sg"}
+
+
+
+*********** control center************
+
+[kafka@localhost confluent-5.1.0]$ sudo bin/confluent status
+[sudo] password for kafka: 
+This CLI is intended for development only, not for production
+https://docs.confluent.io/current/cli/index.html
+
+control-center is [DOWN]
+ksql-server is [UP]
+connect is [DOWN]
+kafka-rest is [DOWN]
+schema-registry is [UP]
+kafka is [UP]
+zookeeper is [UP]
+[kafka@localhost confluent-5.1.0]$ sudo bin/confluent start connect
+This CLI is intended for development only, not for production
+https://docs.confluent.io/current/cli/index.html
+
+Using CONFLUENT_CURRENT: /tmp/confluent.4BptN8oC
+zookeeper is already running. Try restarting if needed
+kafka is already running. Try restarting if needed
+schema-registry is already running. Try restarting if needed
+Starting connect
+connect is [UP]
+[kafka@localhost confluent-5.1.0]$ 
+
+
+[kafka@localhost confluent-5.1.0]$ sudo bin/confluent status
+This CLI is intended for development only, not for production
+https://docs.confluent.io/current/cli/index.html
+
+control-center is [UP]
+ksql-server is [UP]
+connect is [UP]
+kafka-rest is [DOWN]
+schema-registry is [UP]
+kafka is [UP]
+zookeeper is [UP]
+[kafka@localhost confluent-5.1.0]$ 
+
+
+Start control-center and connect and hit localhost:9021 in browser
